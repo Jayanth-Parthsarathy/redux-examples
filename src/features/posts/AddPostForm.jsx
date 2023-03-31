@@ -1,23 +1,34 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { postAdded } from "./postsSlice";
+import { addNewpost } from "./postsSlice";
 import { selectAllUsers } from "../users/usersSlice";
 const AddPostForm = () => {
   const dispatch = useDispatch();
   const [title, setTitle] = useState("");
-  const [content, seContent] = useState("");
+  const [content, setContent] = useState("");
+  const [addRequestStatus, setAddRequestStatus] = useState("idle");
   const [userId, setUserId] = useState("");
   const users = useSelector(selectAllUsers);
+
+  const canSave =
+    [title, content, userId].every(Boolean) && addRequestStatus === "idle";
+
   const onSavedPostClicked = (e) => {
     e.preventDefault();
-    if (title && content) {
-      dispatch(postAdded(title, content, userId));
-      seContent("");
-      setTitle("");
-      setUserId("");
+    if (canSave) {
+      try {
+        setAddRequestStatus("pending");
+        dispatch(addNewpost({ title, body: content, userId })).unwrap();
+        setTitle("");
+        setContent("");
+        setUserId("");
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setAddRequestStatus("idle");
+      }
     }
   };
-  const canSave = Boolean(title) && Boolean(content) && Boolean(userId);
 
   const onAuthorChanged = (e) => {
     setUserId(e.target.value);
@@ -44,7 +55,7 @@ const AddPostForm = () => {
           {userOptions}
         </select>
         <input
-          onChange={(e) => seContent(e.target.value)}
+          onChange={(e) => setContent(e.target.value)}
           value={content}
           type="text"
           placeholder="content"
